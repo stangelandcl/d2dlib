@@ -22,11 +22,10 @@
 * SOFTWARE.
 */
 
-#include "stdafx.h"
 #include "Context.h"
 #include "Simple.h"
 
-void Test(HANDLE handle)
+void Test(void* handle)
 {
 	D2DContext* context = reinterpret_cast<D2DContext*>(handle);
 
@@ -79,7 +78,7 @@ void Test(HANDLE handle)
 	SafeRelease(&textFormat);
 }
 
-void TestDraw1(HANDLE ctx)
+void TestDraw1(void* ctx)
 {
 	RetrieveContext(ctx);
 
@@ -109,7 +108,7 @@ void TestDraw1(HANDLE ctx)
 	SafeRelease(&brush);
 }
 
-void TestDraw(HANDLE ctx)
+void TestDraw(void* ctx)
 {
 	RetrieveContext(ctx);
 

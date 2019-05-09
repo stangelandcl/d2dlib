@@ -1,35 +1,8 @@
-/*
-* MIT License
-*
-* Copyright (c) 2009-2018 Jingwood, unvell.com. All right reserved.
-*
-* Permission is hereby granted, free of charge, to any person obtaining a copy
-* of this software and associated documentation files (the "Software"), to deal
-* in the Software without restriction, including without limitation the rights
-* to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-* copies of the Software, and to permit persons to whom the Software is
-* furnished to do so, subject to the following conditions:
-*
-* The above copyright notice and this permission notice shall be included in all
-* copies or substantial portions of the Software.
-*
-* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-* AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-* OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-* SOFTWARE.
-*/
-
-#include "stdafx.h"
-#include "Bitmap.h"
-
-HANDLE CreateBitmapFromFile(HANDLE ctx,
-  PCWSTR uri, UINT destinationWidth, UINT destinationHeight, ID2D1Bitmap **ppBitmap)
+static void* CreateBitmapFromFile(void* ctx,
+  PCWSTR uri, uint32_t destinationWidth, uint32_t destinationHeight, ID2D1Bitmap **ppBitmap)
 {
 	D2DContext* context = reinterpret_cast<D2DContext*>(ctx);
-	
+
 	IWICBitmapDecoder *pDecoder = NULL;
 	IWICBitmapFrameDecode *pSource = NULL;
 	IWICStream *pStream = NULL;
@@ -38,7 +11,7 @@ HANDLE CreateBitmapFromFile(HANDLE ctx,
 
 	HRESULT hr = context->imageFactory->CreateDecoderFromFilename(
 		uri, NULL, GENERIC_READ, WICDecodeMetadataCacheOnLoad, &pDecoder);
-	
+
 	if (SUCCEEDED(hr))
   {
     hr = pDecoder->GetFrame(0, &pSource);
@@ -53,7 +26,7 @@ HANDLE CreateBitmapFromFile(HANDLE ctx,
 
 	if (SUCCEEDED(hr))
   {
-		hr = pConverter->Initialize(pSource, GUID_WICPixelFormat32bppPBGRA, WICBitmapDitherTypeNone, 
+		hr = pConverter->Initialize(pSource, GUID_WICPixelFormat32bppPBGRA, WICBitmapDitherTypeNone,
 			NULL, 0.f, WICBitmapPaletteTypeMedianCut);
 	}
 
@@ -68,15 +41,15 @@ HANDLE CreateBitmapFromFile(HANDLE ctx,
   SafeRelease(&pConverter);
   //SafeRelease(&pScaler);
 
-	return (HANDLE)0;
+	return (void*)0;
 }
 
-HANDLE CreateBitmapFromHBitmap(HANDLE ctx, HBITMAP hBitmap, BOOL alpha)
+static void* CreateBitmapFromHBitmap(void* ctx, HBITMAP hBitmap, BOOL alpha)
 {
 	RetrieveContext(ctx);
-	
+
 	IWICBitmap* wicBitmap = NULL;
-	HRESULT hr = context->imageFactory->CreateBitmapFromHBITMAP(hBitmap, NULL, 
+	HRESULT hr = context->imageFactory->CreateBitmapFromHBITMAP(hBitmap, NULL,
 		alpha ? WICBitmapAlphaChannelOption::WICBitmapUsePremultipliedAlpha
 		: WICBitmapAlphaChannelOption::WICBitmapIgnoreAlpha, &wicBitmap);
 
@@ -122,16 +95,16 @@ HANDLE CreateBitmapFromHBitmap(HANDLE ctx, HBITMAP hBitmap, BOOL alpha)
 		return NULL;
 	}
 
-	return (HANDLE)d2dBitmap;
+	return (void*)d2dBitmap;
 }
 
-HANDLE CreateBitmapFromMemory(HANDLE ctx, UINT width, UINT height, UINT stride, BYTE* buffer, UINT offset, UINT length)
+static void* CreateBitmapFromMemory(void* ctx, uint32_t width, uint32_t height, uint32_t stride, uint8_t* buffer, uint32_t offset, uint32_t length)
 {
 	RetrieveContext(ctx);
 
 	IWICBitmap* wicBitmap = NULL;
 
-	HRESULT hr = context->imageFactory->CreateBitmapFromMemory(width, height, 
+	HRESULT hr = context->imageFactory->CreateBitmapFromMemory(width, height,
 		GUID_WICPixelFormat32bppPBGRA, stride, length, buffer, &wicBitmap);
 
 	ID2D1Bitmap* d2dBitmap = NULL;
@@ -139,10 +112,10 @@ HANDLE CreateBitmapFromMemory(HANDLE ctx, UINT width, UINT height, UINT stride, 
 
 	SafeRelease(&wicBitmap);
 
-	return (HANDLE)d2dBitmap;
+	return (void*)d2dBitmap;
 }
 
-HANDLE CreateBitmapFromBytes(HANDLE ctx, BYTE* buffer, UINT offset, UINT length)
+static void* CreateBitmapFromBytes(void* ctx, uint8_t* buffer, uint32_t offset, uint32_t length)
 {
 	RetrieveContext(ctx);
 
@@ -167,7 +140,7 @@ HANDLE CreateBitmapFromBytes(HANDLE ctx, BYTE* buffer, UINT offset, UINT length)
 	if (SUCCEEDED(hr))
 	{
 		// Initialize the stream with the memory pointer and size.
-		hr = stream->InitializeFromMemory(reinterpret_cast<BYTE*>(buffer + offset), length);
+		hr = stream->InitializeFromMemory(reinterpret_cast<uint8_t*>(buffer + offset), length);
 	}
 
 	if (SUCCEEDED(hr))
@@ -181,7 +154,7 @@ HANDLE CreateBitmapFromBytes(HANDLE ctx, BYTE* buffer, UINT offset, UINT length)
 		// Create the initial frame.
 		hr = decoder->GetFrame(0, &source);
 	}
-	
+
 	if (SUCCEEDED(hr))
 	{
 		// Convert the image format to 32bppPBGRA
@@ -191,7 +164,7 @@ HANDLE CreateBitmapFromBytes(HANDLE ctx, BYTE* buffer, UINT offset, UINT length)
 
 	if (SUCCEEDED(hr))
   {
-		hr = converter->Initialize(source, GUID_WICPixelFormat32bppPBGRA, 
+		hr = converter->Initialize(source, GUID_WICPixelFormat32bppPBGRA,
 			WICBitmapDitherTypeNone, NULL, 0.f, WICBitmapPaletteTypeMedianCut);
 	}
 
@@ -207,10 +180,10 @@ HANDLE CreateBitmapFromBytes(HANDLE ctx, BYTE* buffer, UINT offset, UINT length)
 	SafeRelease(&converter);
 	SafeRelease(&scaler);
 
-	return (HANDLE)bitmap;
+	return (void*)bitmap;
 }
 
-HANDLE CreateBitmapFromFile(HANDLE ctx, LPCWSTR filepath) 
+static void* CreateBitmapFromFile(void* ctx, LPCWSTR filepath)
 {
 	RetrieveContext(ctx);
 
@@ -253,7 +226,7 @@ HANDLE CreateBitmapFromFile(HANDLE ctx, LPCWSTR filepath)
 
 	if (SUCCEEDED(hr))
   {
-		hr = converter->Initialize(source, GUID_WICPixelFormat32bppPBGRA, 
+		hr = converter->Initialize(source, GUID_WICPixelFormat32bppPBGRA,
 			WICBitmapDitherTypeNone, NULL, 0.f, WICBitmapPaletteTypeMedianCut);
 	}
 
@@ -268,31 +241,25 @@ HANDLE CreateBitmapFromFile(HANDLE ctx, LPCWSTR filepath)
 	SafeRelease(&converter);
 	SafeRelease(&scaler);
 
-	return (HANDLE)bitmap;
+	return (void*)bitmap;
 }
 
-void DrawGDIBitmap(HANDLE hContext, HBITMAP hBitmap, FLOAT opacity, BOOL alpha,
-									 D2D1_BITMAP_INTERPOLATION_MODE interpolationMode)
-{
-	DrawGDIBitmapRect(hContext, hBitmap, NULL, NULL, opacity, alpha, interpolationMode);
-}
-
-void DrawGDIBitmapRect(HANDLE hContext, HBITMAP hBitmap, D2D1_RECT_F* rect, 
-											 D2D1_RECT_F* sourceRectangle, FLOAT opacity, BOOL alpha,
-											 D2D1_BITMAP_INTERPOLATION_MODE interpolationMode)
+static void DrawGDIBitmapRect(void* hContext, HBITMAP hBitmap, D2D1_RECT_F* rect,
+    D2D1_RECT_F* sourceRectangle, float opacity, BOOL alpha,
+    D2D1_BITMAP_INTERPOLATION_MODE interpolationMode)
 {
 	D2DContext* context = reinterpret_cast<D2DContext*>(hContext);
 
 	IWICBitmap* bitmap = NULL;
 
-	context->imageFactory->CreateBitmapFromHBITMAP(hBitmap, 0, 
+	context->imageFactory->CreateBitmapFromHBITMAP(hBitmap, 0,
 		alpha ? WICBitmapAlphaChannelOption::WICBitmapUseAlpha
 		: WICBitmapAlphaChannelOption::WICBitmapIgnoreAlpha, &bitmap);
 
 	ID2D1Bitmap* d2dBitmap = NULL;
 
 	HRESULT hr = context->renderTarget->CreateBitmapFromWicBitmap(bitmap, NULL, &d2dBitmap);
-	
+
 	_ASSERT(d2dBitmap != NULL);
 
 	context->renderTarget->DrawBitmap(d2dBitmap, rect, opacity, interpolationMode, sourceRectangle);
@@ -301,8 +268,14 @@ void DrawGDIBitmapRect(HANDLE hContext, HBITMAP hBitmap, D2D1_RECT_F* rect,
 	SafeRelease(&bitmap);
 }
 
-void DrawD2DBitmap(HANDLE ctx, HANDLE d2dbitmap, D2D1_RECT_F* destRect, D2D1_RECT_F* srcRect,
-	FLOAT opacity, D2D1_BITMAP_INTERPOLATION_MODE interpolationMode)
+static void DrawGDIBitmap(void* hContext, HBITMAP hBitmap, float opacity, BOOL alpha,
+    D2D1_BITMAP_INTERPOLATION_MODE interpolationMode)
+{
+	DrawGDIBitmapRect(hContext, hBitmap, NULL, NULL, opacity, alpha, interpolationMode);
+}
+
+static void DrawD2DBitmap(void* ctx, void* d2dbitmap, D2D1_RECT_F* destRect, D2D1_RECT_F* srcRect,
+	float opacity, D2D1_BITMAP_INTERPOLATION_MODE interpolationMode)
 {
 	RetrieveContext(ctx);
 	ID2D1Bitmap* bitmap = reinterpret_cast<ID2D1Bitmap*>(d2dbitmap);
@@ -310,7 +283,7 @@ void DrawD2DBitmap(HANDLE ctx, HANDLE d2dbitmap, D2D1_RECT_F* destRect, D2D1_REC
 	context->renderTarget->DrawBitmap(bitmap, destRect, opacity, interpolationMode, srcRect);
 }
 
-D2D1_SIZE_F GetBitmapSize(HANDLE d2dbitmap)
+static D2D1_SIZE_F GetBitmapSize(void* d2dbitmap)
 {
 	ID2D1Bitmap* bitmap = reinterpret_cast<ID2D1Bitmap*>(d2dbitmap);
 	return bitmap->GetSize();
@@ -321,7 +294,7 @@ void _unused_get_wic_info() {
 
 	TCHAR msg[256];
 
-	UINT w, h;
+	uint32_t w, h;
 	wicBitmap->GetSize(&w, &h);
 	_swprintf_c(msg, 256, L"width: %d, height: %d", w, h);
 	MessageBox(context->hwnd, msg, NULL, MB_OK);

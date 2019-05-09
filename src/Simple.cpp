@@ -1,33 +1,5 @@
-/*
-* MIT License
-*
-* Copyright (c) 2009-2018 Jingwood, unvell.com. All right reserved.
-*
-* Permission is hereby granted, free of charge, to any person obtaining a copy
-* of this software and associated documentation files (the "Software"), to deal
-* in the Software without restriction, including without limitation the rights
-* to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-* copies of the Software, and to permit persons to whom the Software is
-* furnished to do so, subject to the following conditions:
-*
-* The above copyright notice and this permission notice shall be included in all
-* copies or substantial portions of the Software.
-*
-* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-* AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-* OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-* SOFTWARE.
-*/
-
-#include "stdafx.h"
-#include "Simple.h"
-#include "Pen.h"
-
-void DrawLine(HANDLE ctx, D2D1_POINT_2F start, D2D1_POINT_2F end, D2D1_COLOR_F color,
-	FLOAT width, D2D1_DASH_STYLE dashStyle)
+static void DrawLine(void* ctx, D2D1_POINT_2F start, D2D1_POINT_2F end, D2D1_COLOR_F color,
+	float width, D2D1_DASH_STYLE dashStyle)
 {
 	RetrieveContext(ctx);
 
@@ -54,8 +26,8 @@ void DrawLine(HANDLE ctx, D2D1_POINT_2F start, D2D1_POINT_2F end, D2D1_COLOR_F c
 	SafeRelease(&brush);
 }
 
-void DrawArrowLine(HANDLE ctx, D2D1_POINT_2F start, D2D1_POINT_2F end, D2D1_COLOR_F color,
-	FLOAT width, D2D1_DASH_STYLE dashStyle)
+static void DrawArrowLine(void* ctx, D2D1_POINT_2F start, D2D1_POINT_2F end, D2D1_COLOR_F color,
+	float width, D2D1_DASH_STYLE dashStyle)
 {
 	RetrieveContext(ctx);
 
@@ -82,7 +54,7 @@ void DrawArrowLine(HANDLE ctx, D2D1_POINT_2F start, D2D1_POINT_2F end, D2D1_COLO
 	SafeRelease(&brush);
 }
 
-D2DLIB_API void DrawLineWithPen(HANDLE ctx, D2D1_POINT_2F start, D2D1_POINT_2F end, HANDLE penHandle, FLOAT width)
+static void DrawLineWithPen(void* ctx, D2D1_POINT_2F start, D2D1_POINT_2F end, void* penHandle, float width)
 {
 	RetrieveContext(ctx);
 
@@ -91,8 +63,8 @@ D2DLIB_API void DrawLineWithPen(HANDLE ctx, D2D1_POINT_2F start, D2D1_POINT_2F e
 	context->renderTarget->DrawLine(start, end, pen->brush, width, pen->strokeStyle);
 }
 
-void DrawLines(HANDLE ctx, D2D1_POINT_2F* points, UINT count, D2D1_COLOR_F color,
-	FLOAT width, D2D1_DASH_STYLE dashStyle)
+static void DrawLines(void* ctx, D2D1_POINT_2F* points, uint32_t count, D2D1_COLOR_F color,
+	float width, D2D1_DASH_STYLE dashStyle)
 {
 	if (count <= 1) return;
 
@@ -116,14 +88,14 @@ void DrawLines(HANDLE ctx, D2D1_POINT_2F* points, UINT count, D2D1_COLOR_F color
 
 		ID2D1PathGeometry* pathGeo = NULL;
 		context->factory->CreatePathGeometry(&pathGeo);
-	
+
 		ID2D1GeometrySink* sink = NULL;
 		pathGeo->Open(&sink);
 		sink->BeginFigure(points[0], D2D1_FIGURE_BEGIN::D2D1_FIGURE_BEGIN_FILLED);
 		sink->AddLines(points + 1, count - 1);
 		//sink->EndFigure(D2D1_FIGURE_END_CLOSED);
 		sink->Close();
-	
+
 		context->renderTarget->DrawGeometry(pathGeo, brush, width, strokeStyle);
 
 		SafeRelease(&sink);
@@ -131,7 +103,7 @@ void DrawLines(HANDLE ctx, D2D1_POINT_2F* points, UINT count, D2D1_COLOR_F color
 	}
 	else
 	{
-		for(UINT i = 0;i < count-1; i++)
+		for(uint32_t i = 0;i < count-1; i++)
 		{
 			context->renderTarget->DrawLine(points[i], points[i + 1], brush, width, strokeStyle);
 		}
@@ -142,8 +114,8 @@ void DrawLines(HANDLE ctx, D2D1_POINT_2F* points, UINT count, D2D1_COLOR_F color
 	SafeRelease(&brush);
 }
 
-void DrawRectangle(HANDLE handle, D2D1_RECT_F* rect, D2D1_COLOR_F color,
-	FLOAT width, D2D1_DASH_STYLE dashStyle)
+static void DrawRectangle(void* handle, D2D1_RECT_F* rect, D2D1_COLOR_F color,
+	float width, D2D1_DASH_STYLE dashStyle)
 {
 	D2DContext* context = reinterpret_cast<D2DContext*>(handle);
 
@@ -172,7 +144,7 @@ void DrawRectangle(HANDLE handle, D2D1_RECT_F* rect, D2D1_COLOR_F color,
 	SafeRelease(&brush);
 }
 
-void FillRectangle(HANDLE ctx, D2D1_RECT_F* rect, D2D1_COLOR_F color)
+static void FillRectangle(void* ctx, D2D1_RECT_F* rect, D2D1_COLOR_F color)
 {
 	RetrieveContext(ctx);
 
@@ -187,7 +159,7 @@ void FillRectangle(HANDLE ctx, D2D1_RECT_F* rect, D2D1_COLOR_F color)
 	//if (it == context->solidBrushes->end())
 	//{
 	//	lastResultCode = (context->renderTarget)->CreateSolidColorBrush(*color, &brush);
-	//	context->solidBrushes->insert(context->solidBrushes->begin(), 
+	//	context->solidBrushes->insert(context->solidBrushes->begin(),
 	//		std::pair<UINT32, ID2D1SolidColorBrush*>(colorValue, brush));
 	//}
 	//else
@@ -204,8 +176,8 @@ void FillRectangle(HANDLE ctx, D2D1_RECT_F* rect, D2D1_COLOR_F color)
 	SafeRelease(&brush);
 }
 
-void DrawEllipse(HANDLE handle, D2D1_ELLIPSE* ellipse, D2D1_COLOR_F color,
-								 FLOAT width, D2D1_DASH_STYLE dashStyle)
+static void DrawEllipse(void* handle, D2D1_ELLIPSE* ellipse, D2D1_COLOR_F color,
+    float width, D2D1_DASH_STYLE dashStyle)
 {
 	D2DContext* context = reinterpret_cast<D2DContext*>(handle);
 
@@ -226,14 +198,14 @@ void DrawEllipse(HANDLE handle, D2D1_ELLIPSE* ellipse, D2D1_COLOR_F color,
 					dashStyle,
           0.0f), NULL, 0, &strokeStyle);
 	}
-	
+
 	context->renderTarget->DrawEllipse(ellipse, brush, width, strokeStyle);
 
 	SafeRelease(&strokeStyle);
 	SafeRelease(&brush);
 }
 
-void FillEllipse(HANDLE handle, D2D1_ELLIPSE* ellipse, D2D1_COLOR_F color)
+static void FillEllipse(void* handle, D2D1_ELLIPSE* ellipse, D2D1_COLOR_F color)
 {
 	D2DContext* context = reinterpret_cast<D2DContext*>(handle);
 
@@ -246,7 +218,7 @@ void FillEllipse(HANDLE handle, D2D1_ELLIPSE* ellipse, D2D1_COLOR_F color)
 	SafeRelease(&brush);
 }
 
-void FillEllipseWithBrush(HANDLE ctx, D2D1_ELLIPSE* ellipse, HANDLE brush_handle)
+static void FillEllipseWithBrush(void* ctx, D2D1_ELLIPSE* ellipse, void* brush_handle)
 {
 	RetrieveContext(ctx);
 

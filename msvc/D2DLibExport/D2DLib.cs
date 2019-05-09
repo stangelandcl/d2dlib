@@ -1,18 +1,18 @@
 ﻿/*
  * MIT License
- * 
+ *
  * Copyright (c) 2009-2018 Jingwood, unvell.com. All right reserved.
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in all
  * copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
- 
+
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
@@ -147,12 +147,12 @@ namespace unvell.D2DLib
 		#endregion
 
 		#region Geometry
-		
+
 		[DllImport("d2dlib.dll", CallingConvention = CallingConvention.Cdecl)]
 		public static extern HANDLE CreateRectangleGeometry([In] HANDLE ctx, [In] ref D2DRect rect);
 
 		[DllImport("d2dlib.dll", CallingConvention = CallingConvention.Cdecl)]
-		public static extern void FillGeometryWithBrush([In] HANDLE ctx, [In] HANDLE geoHandle, 
+		public static extern void FillGeometryWithBrush([In] HANDLE ctx, [In] HANDLE geoHandle,
 			[In] HANDLE brushHandle, [Optional] HANDLE opacityBrushHandle);
 
 		[DllImport("d2dlib.dll", CallingConvention = CallingConvention.Cdecl)]
@@ -162,7 +162,7 @@ namespace unvell.D2DLib
 		[DllImport("d2dlib.dll", CallingConvention = CallingConvention.Cdecl)]
 		public static extern void DrawPolygonWithBrush(HANDLE ctx, D2DPoint[] points, UINT count,
 			D2DColor strokeColor, FLOAT strokeWidth, D2DDashStyle dashStyle, HANDLE brushHandler);
-		
+
 		#endregion // Geometry
 
 		#region Path
@@ -185,10 +185,10 @@ namespace unvell.D2DLib
 		[DllImport("d2dlib.dll", CallingConvention = CallingConvention.Cdecl)]
 		public static extern void AddPathArc(HANDLE ctx, D2DSize size, D2DPoint endPoint, FLOAT sweepAngle,
 		D2D1_SWEEP_DIRECTION sweepDirection = D2D1_SWEEP_DIRECTION.D2D1_SWEEP_DIRECTION_CLOCKWISE);
-			
+
 		[DllImport("d2dlib.dll", CallingConvention = CallingConvention.Cdecl)]
-		public static extern void DrawBeziers(HANDLE ctx, D2DBezierSegment[] bezierSegments, UINT count, 
-															D2DColor strokeColor, FLOAT strokeWidth = 1, 
+		public static extern void DrawBeziers(HANDLE ctx, D2DBezierSegment[] bezierSegments, UINT count,
+															D2DColor strokeColor, FLOAT strokeWidth = 1,
 															D2DDashStyle dashStyle = D2DDashStyle.Solid);
 
 		[DllImport("d2dlib.dll", CallingConvention = CallingConvention.Cdecl)]
@@ -224,7 +224,7 @@ namespace unvell.D2DLib
 
 		[DllImport("d2dlib.dll", CallingConvention = CallingConvention.Cdecl)]
 		public static extern HANDLE CreateRadialGradientBrush(HANDLE ctx, D2DPoint origin, D2DPoint offset,
-																												  FLOAT radiusX, FLOAT radiusY, D2DGradientStop[] gradientStops, 
+																												  FLOAT radiusX, FLOAT radiusY, D2DGradientStop[] gradientStops,
 																													UINT gradientStopCount);
 
 		[DllImport("d2dlib.dll", CallingConvention = CallingConvention.Cdecl)]
@@ -309,7 +309,7 @@ namespace unvell.D2DLib
 																														FLOAT radiusX, FLOAT radiusY,
 																														D2DGradientStop[] gradientStops)
 		{
-			HANDLE handle = D2D.CreateRadialGradientBrush(this.Handle, origin, offset, radiusX, radiusY, 
+			HANDLE handle = D2D.CreateRadialGradientBrush(this.Handle, origin, offset, radiusX, radiusY,
 				gradientStops, (uint)gradientStops.Length);
 
 			return new D2DRadialGradientBrush(handle, gradientStops);
@@ -383,7 +383,7 @@ namespace unvell.D2DLib
 		public D2DBitmapGraphics CreateBitmapGraphics(D2DSize size)
 		{
 			HANDLE bitmapRenderTargetHandle = D2D.CreateBitmapRenderTarget(this.Handle, size);
-			return bitmapRenderTargetHandle == HANDLE.Zero ? null 
+			return bitmapRenderTargetHandle == HANDLE.Zero ? null
 				: new D2DBitmapGraphics(bitmapRenderTargetHandle);
 		}
 
@@ -547,7 +547,7 @@ namespace unvell.D2DLib
 			this.DrawPolygon(points, strokeColor, strokeWidth, dashStyle, D2DColor.Transparent);
 		}
 
-		public void DrawPolygon(D2DPoint[] points, 
+		public void DrawPolygon(D2DPoint[] points,
 			D2DColor strokeColor, FLOAT strokeWidth, D2DDashStyle dashStyle, D2DColor fillColor)
 		{
 			D2D.DrawPolygon(DeviceHandle, points, (uint)points.Length, strokeColor, strokeWidth, dashStyle, fillColor);
@@ -631,7 +631,7 @@ namespace unvell.D2DLib
 			D2D.DrawRectangle(this.DeviceHandle, ref rect, color, strokeWidth, dashStyle);
 		}
 
-		public void DrawRectangle(D2DRect rect, D2DColor color, FLOAT strokeWidth = 1, 
+		public void DrawRectangle(D2DRect rect, D2DColor color, FLOAT strokeWidth = 1,
 			D2DDashStyle dashStyle = D2DDashStyle.Solid)
 		{
 			D2D.DrawRectangle(this.DeviceHandle, ref rect, color, strokeWidth, dashStyle);
@@ -692,18 +692,18 @@ namespace unvell.D2DLib
 
 		public void DrawTextCenter(string text, D2DColor color, string fontName, float fontSize, D2DRect rect)
 		{
-			this.DrawText(text, color, fontName, fontSize, rect, 
+			this.DrawText(text, color, fontName, fontSize, rect,
 				DWRITE_TEXT_ALIGNMENT.DWRITE_TEXT_ALIGNMENT_CENTER, DWRITE_PARAGRAPH_ALIGNMENT.DWRITE_PARAGRAPH_ALIGNMENT_CENTER);
 		}
 
-		public void DrawText(string text, D2DColor color, string fontName, float fontSize, D2DRect rect, 
+		public void DrawText(string text, D2DColor color, string fontName, float fontSize, D2DRect rect,
 			DWRITE_TEXT_ALIGNMENT halign = DWRITE_TEXT_ALIGNMENT.DWRITE_TEXT_ALIGNMENT_LEADING,
 			DWRITE_PARAGRAPH_ALIGNMENT valign = DWRITE_PARAGRAPH_ALIGNMENT.DWRITE_PARAGRAPH_ALIGNMENT_NEAR)
 		{
 			D2D.DrawText(this.DeviceHandle, text, color, fontName, fontSize, ref rect, halign, valign);
 		}
 
-		public void DrawPath(D2DPathGeometry path, D2DColor strokeColor, 
+		public void DrawPath(D2DPathGeometry path, D2DColor strokeColor,
 			FLOAT strokeWidth = 1f, D2DDashStyle dashStyle = D2DDashStyle.Solid)
 		{
 			D2D.DrawPath(path.Handle, strokeColor, strokeWidth, dashStyle);
@@ -713,8 +713,8 @@ namespace unvell.D2DLib
 		{
 			D2D.FillPathD(path.Handle, fillColor);
 		}
-		
-		
+
+
 		public void Clear(D2DColor color)
 		{
 		    D2D.Clear(DeviceHandle, color);
@@ -740,21 +740,7 @@ namespace unvell.D2DLib
 		}
 	}
 
-	public class D2DObject : IDisposable
-	{
-		internal HANDLE Handle { get; private set; }
-
-		public D2DObject(HANDLE handle)
-		{
-			this.Handle = handle;
-		}
-
-		public virtual void Dispose()
-		{
-			if (this.Handle != IntPtr.Zero) D2D.ReleaseObject(this.Handle);
-		}
-	}
-
+	
 	public class D2DPen : D2DObject
 	{
 		private D2DColor color;
@@ -841,7 +827,7 @@ namespace unvell.D2DLib
 		internal D2DPathGeometry(HANDLE deviceHandle, HANDLE pathHandle)
 			: base(deviceHandle, pathHandle)
 		{
-		}	
+		}
 
 		public void AddLines(D2DPoint[] points)
 		{
@@ -858,7 +844,7 @@ namespace unvell.D2DLib
 			D2D.AddPathEllipse(this.Handle, ref ellipse);
 		}
 
-		public void AddArc(D2DSize size, D2DPoint	endPoint, FLOAT sweepAngle, 
+		public void AddArc(D2DSize size, D2DPoint	endPoint, FLOAT sweepAngle,
 			D2D1_SWEEP_DIRECTION sweepDirection = D2D1_SWEEP_DIRECTION.D2D1_SWEEP_DIRECTION_CLOCKWISE)
 		{
 			D2D.AddPathArc(this.Handle, size, endPoint, sweepAngle);
@@ -878,7 +864,7 @@ namespace unvell.D2DLib
 		{
 			D2D.ClosePath(this.Handle);
 		}
-		
+
 		public override void Dispose()
 		{
 			D2D.DestoryPathGeometry(this.Handle);

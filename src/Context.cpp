@@ -1,45 +1,56 @@
-/*
-* MIT License
-*
-* Copyright (c) 2009-2018 Jingwood, unvell.com. All right reserved.
-*
-* Permission is hereby granted, free of charge, to any person obtaining a copy
-* of this software and associated documentation files (the "Software"), to deal
-* in the Software without restriction, including without limitation the rights
-* to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-* copies of the Software, and to permit persons to whom the Software is
-* furnished to do so, subject to the following conditions:
-*
-* The above copyright notice and this permission notice shall be included in all
-* copies or substantial portions of the Software.
-*
-* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-* AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-* OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-* SOFTWARE.
-*/
-
-// D2DLib.cpp : Defines the exported functions for the DLL application.
-//
-
-#include "stdafx.h"
-#include "Context.h"
-
 #include <stack>
 using namespace std;
 
-// This is the constructor of a class that has been exported.
-// see D2DLib.h for the class definition
-//CD2DLib::CD2DLib()
-//{
-//	return;
-//}
 
-// This is an example of an exported function.
-HANDLE CreateContext(HWND hwnd)
+typedef struct D2DContext
+{
+	ID2D1Factory* factory;
+	IDWriteFactory* writeFactory;
+	IWICImagingFactory* imageFactory;
+
+	union
+	{
+		struct // HwndRenderTarget
+		{
+			ID2D1HwndRenderTarget* renderTarget;
+			HWND hwnd;
+		};
+
+		struct // BitmapRenderTarget
+		{
+			ID2D1BitmapRenderTarget *bitmapRenderTarget;
+			ID2D1Bitmap* bitmap;
+		};
+	};
+
+	std::stack<D2D1_MATRIX_3X2_F>* matrixStack;
+
+	HRESULT lastErrorCode;
+
+} D2DContext;
+
+
+template<class Interface>
+inline void SafeRelease(Interface **ppInterfaceToRelease)
+{
+  if (*ppInterfaceToRelease != NULL)
+  {
+    (*ppInterfaceToRelease)->Release();
+    (*ppInterfaceToRelease) = NULL;
+  }
+}
+
+#define RetrieveContext(ctx) D2DContext* context = reinterpret_cast<D2DContext*>(ctx)
+#define RetrieveD2DBitmap(ctx) ID2D1Bitmap* d2dbitmap = reinterpret_cast<ID2D1Bitmap*>(d2dbitmapHandle)
+
+
+static void ReleaseObject(void* handle)
+{
+    ID2D1Resource* object = reinterpret_cast<ID2D1Resource*>(handle);
+    SafeRelease(&object);
+}
+
+static void* CreateContext(HWND hwnd)
 {
 	D2DContext* context = new D2DContext();
 	ZeroMemory(context, sizeof(context));
@@ -51,7 +62,7 @@ HANDLE CreateContext(HWND hwnd)
 	context->matrixStack = new std::stack<D2D1_MATRIX_3X2_F>();
 
 	hr = D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, &context->factory);
-	
+
 	if (!SUCCEEDED(hr)) {
 		context->lastErrorCode = hr;
 		return NULL;
@@ -67,7 +78,7 @@ HANDLE CreateContext(HWND hwnd)
 
 	hr = CoCreateInstance(CLSID_WICImagingFactory, NULL, CLSCTX_INPROC_SERVER,
 			IID_IWICImagingFactory, (LPVOID*)&context->imageFactory);
-	
+
 	if (!SUCCEEDED(hr)) {
 		context->lastErrorCode = hr;
 		return NULL;
@@ -89,13 +100,23 @@ HANDLE CreateContext(HWND hwnd)
 	//context->renderTarget->SetAntialiasMode(D2D1_ANTIALIAS_MODE::D2D1_ANTIALIAS_MODE_ALIASED);
 	context->renderTarget->SetAntialiasMode(D2D1_ANTIALIAS_MODE::D2D1_ANTIALIAS_MODE_PER_PRIMITIVE);
 
-	return (HANDLE)context;
+	return (void*)context;
 }
 
-void DestoryContext(HANDLE handle)
+
+// This is the constructor of a class that has been exported.
+// see D2DLib.h for the class definition
+//CD2DLib::CD2DLib()
+//{
+//	return;
+//}
+
+// This is an example of an exported function.
+
+static void DestroyContext(void* handle)
 {
 	D2DContext* context = reinterpret_cast<D2DContext*>(handle);
-	
+
 	delete context->matrixStack;
 
 	SafeRelease(&context->imageFactory);
@@ -105,7 +126,7 @@ void DestoryContext(HANDLE handle)
 
 	//if (context->solidBrushes != NULL)
 	//{
-	//	for( std::map<UINT32, ID2D1SolidColorBrush*>::iterator it = context->solidBrushes->begin(); 
+	//	for( std::map<UINT32, ID2D1SolidColorBrush*>::iterator it = context->solidBrushes->begin();
 	//		it != context->solidBrushes->end(); it++)
 	//	{
 	//		SafeRelease(&context->solidBrushes->at(it->first));
@@ -117,7 +138,7 @@ void DestoryContext(HANDLE handle)
 	delete context;
 }
 
-void ResizeContext(HANDLE handle)
+static void ResizeContext(void* handle)
 {
 	if (handle == 0 || handle == INVALID_HANDLE_VALUE) return;
 
@@ -133,21 +154,21 @@ void ResizeContext(HANDLE handle)
 	context->renderTarget->Resize(size);
 }
 
-void SetContextProperties(HANDLE ctx, D2D1_ANTIALIAS_MODE antialiasMode)
+static void SetContextProperties(void* ctx, D2D1_ANTIALIAS_MODE antialiasMode)
 {
 	RetrieveContext(ctx);
 
 	context->renderTarget->SetAntialiasMode(antialiasMode);
 }
 
-void BeginRender(HANDLE ctx)
+static void BeginRender(void* ctx)
 {
 	RetrieveContext(ctx);
 
 	context->renderTarget->BeginDraw();
 }
 
-void BeginRenderWithBackgroundColor(HANDLE ctx, D2D1_COLOR_F backColor)
+static void BeginRenderWithBackgroundColor(void* ctx, D2D1_COLOR_F backColor)
 {
 	RetrieveContext(ctx);
 
@@ -156,7 +177,7 @@ void BeginRenderWithBackgroundColor(HANDLE ctx, D2D1_COLOR_F backColor)
 	context->renderTarget->Clear(backColor);
 }
 
-void BeginRenderWithBackgroundBitmap(HANDLE ctx, HANDLE bitmap)
+static void BeginRenderWithBackgroundBitmap(void* ctx, void* bitmap)
 {
 	RetrieveContext(ctx);
 	ID2D1Bitmap* d2dbitmap = reinterpret_cast<ID2D1Bitmap*>(bitmap);
@@ -169,25 +190,25 @@ void BeginRenderWithBackgroundBitmap(HANDLE ctx, HANDLE bitmap)
 	context->renderTarget->DrawBitmap(d2dbitmap, &destRect);
 }
 
-void Clear(HANDLE ctx, D2D1_COLOR_F color)
+static void Clear(void* ctx, D2D1_COLOR_F color)
 {
 	RetrieveContext(ctx);
 
 	context->renderTarget->Clear(color);
 }
 
-void EndRender(HANDLE ctx)
+static void EndRender(void* ctx)
 {
 	RetrieveContext(ctx);
 	context->renderTarget->EndDraw();
 }
 
-void Flush(HANDLE ctx)
+static void Flush(void* ctx)
 {
 	RetrieveContext(ctx);
 	context->renderTarget->Flush();
 }
-//D2DLIB_API HANDLE DeleteStorkeStyle(const HANDLE handle)
+//D2DLIB_API void* DeleteStorkeStyle(const void* handle)
 //{
 //
 //	D2DContext* context = reinterpret_cast<D2DContext*>(handle);
@@ -204,11 +225,11 @@ void Flush(HANDLE ctx)
 //            0.0f), dashes,
 //        ARRAYSIZE(dashes), &strokeStyle);
 //
-//	return (HANDLE)strokeStyle;
+//	return (void*)strokeStyle;
 //}
 
 
-HANDLE CreateBitmapRenderTarget(HANDLE ctx, D2D1_SIZE_F size)
+static void* CreateBitmapRenderTarget(void* ctx, D2D1_SIZE_F size)
 {
 	RetrieveContext(ctx);
 
@@ -218,10 +239,10 @@ HANDLE CreateBitmapRenderTarget(HANDLE ctx, D2D1_SIZE_F size)
 	bitmapRenderTargetContext->factory = context->factory;
 	bitmapRenderTargetContext->imageFactory = context->imageFactory;
 	bitmapRenderTargetContext->writeFactory = context->writeFactory;
-	
+
 	HRESULT hr;
 
-	if (size.width <= 0 && size.height <= 0) 
+	if (size.width <= 0 && size.height <= 0)
 	{
 		hr = context->renderTarget->CreateCompatibleRenderTarget(
 			&bitmapRenderTargetContext->bitmapRenderTarget);
@@ -237,16 +258,16 @@ HANDLE CreateBitmapRenderTarget(HANDLE ctx, D2D1_SIZE_F size)
 		return NULL;
 	}
 
-	return (HANDLE)bitmapRenderTargetContext;
+	return (void*)bitmapRenderTargetContext;
 }
 
-void DrawBitmapRenderTarget(HANDLE ctx, HANDLE bitmapRenderTargetHandle, D2D1_RECT_F* rect,
-														FLOAT opacity, D2D1_BITMAP_INTERPOLATION_MODE interpolationMode)
+static void DrawBitmapRenderTarget(void* ctx, void* bitmapRenderTargetHandle, D2D1_RECT_F* rect,
+														float opacity, D2D1_BITMAP_INTERPOLATION_MODE interpolationMode)
 {
 	RetrieveContext(ctx);
 	D2DContext* bitmapRenderTargetContext = reinterpret_cast<D2DContext*>(bitmapRenderTargetHandle);
 
-	if (bitmapRenderTargetContext->bitmap == NULL) 
+	if (bitmapRenderTargetContext->bitmap == NULL)
 	{
 		bitmapRenderTargetContext->bitmapRenderTarget->GetBitmap(&bitmapRenderTargetContext->bitmap);
 	}
@@ -254,17 +275,17 @@ void DrawBitmapRenderTarget(HANDLE ctx, HANDLE bitmapRenderTargetHandle, D2D1_RE
 	context->renderTarget->DrawBitmap(bitmapRenderTargetContext->bitmap, rect, opacity, interpolationMode);
 }
 
-HANDLE GetBitmapRenderTargetBitmap(HANDLE bitmapRenderTargetHandle)
+static void* GetBitmapRenderTargetBitmap(void* bitmapRenderTargetHandle)
 {
 	RetrieveContext(bitmapRenderTargetHandle);
-	
+
 	ID2D1Bitmap* bitmap = NULL;
 	context->bitmapRenderTarget->GetBitmap(&bitmap);
 
 	return bitmap;
 }
 
-void DestoryBitmapRenderTarget(HANDLE ctx)
+static void DestoryBitmapRenderTarget(void* ctx)
 {
 	if (ctx == 0) return;
 
@@ -283,19 +304,19 @@ void DestoryBitmapRenderTarget(HANDLE ctx)
 	delete context;
 }
 
-void PushClip(HANDLE ctx, D2D1_RECT_F* rect, D2D1_ANTIALIAS_MODE antiAliasMode)
+static void PushClip(void* ctx, D2D1_RECT_F* rect, D2D1_ANTIALIAS_MODE antiAliasMode)
 {
 	D2DContext* context = reinterpret_cast<D2DContext*>(ctx);
 	context->renderTarget->PushAxisAlignedClip(rect, antiAliasMode);
 }
 
-void PopClip(HANDLE ctx)
+static void PopClip(void* ctx)
 {
 	D2DContext* context = reinterpret_cast<D2DContext*>(ctx);
 	context->renderTarget->PopAxisAlignedClip();
 }
 
-void PushTransform(HANDLE ctx)
+static void PushTransform(void* ctx)
 {
 	RetrieveContext(ctx);
 
@@ -305,18 +326,17 @@ void PushTransform(HANDLE ctx)
 	context->matrixStack->push(matrix);
 }
 
-void PopTransform(HANDLE ctx)
+static void PopTransform(void* ctx)
 {
 	RetrieveContext(ctx);
 
 	D2D1_MATRIX_3X2_F matrix = context->matrixStack->top();
 	context->matrixStack->pop();
-	
+
 	context->renderTarget->SetTransform(&matrix);
 }
 
-
-void TranslateTransform(HANDLE ctx, FLOAT x, FLOAT y)
+static void TranslateTransform(void* ctx, float x, float y)
 {
 	RetrieveContext(ctx);
 
@@ -327,7 +347,7 @@ void TranslateTransform(HANDLE ctx, FLOAT x, FLOAT y)
 	context->renderTarget->SetTransform(matrix * translateMatrix);
 }
 
-void ScaleTransform(HANDLE ctx, FLOAT scaleX, FLOAT scaleY, D2D1_POINT_2F center)
+static void ScaleTransform(void* ctx, float scaleX, float scaleY, D2D1_POINT_2F center)
 {
 	RetrieveContext(ctx);
 
@@ -339,10 +359,10 @@ void ScaleTransform(HANDLE ctx, FLOAT scaleX, FLOAT scaleY, D2D1_POINT_2F center
 	context->renderTarget->SetTransform(scaleMatrix * matrix);
 }
 
-void RotateTransform(HANDLE ctx, FLOAT angle, D2D_POINT_2F point)
+static void RotateTransform(void* ctx, float angle, D2D_POINT_2F point)
 {
 	RetrieveContext(ctx);
-	
+
 	D2D1_MATRIX_3X2_F matrix;
 	context->renderTarget->GetTransform(&matrix);
 
@@ -350,7 +370,7 @@ void RotateTransform(HANDLE ctx, FLOAT angle, D2D_POINT_2F point)
 	context->renderTarget->SetTransform(rotateMatrix * matrix);
 }
 
-void SkewTransform(HANDLE ctx, FLOAT angleX, FLOAT angleY, D2D1_POINT_2F center)
+static void SkewTransform(void* ctx, float angleX, float angleY, D2D1_POINT_2F center)
 {
 	RetrieveContext(ctx);
 
@@ -358,7 +378,7 @@ void SkewTransform(HANDLE ctx, FLOAT angleX, FLOAT angleY, D2D1_POINT_2F center)
 	context->renderTarget->SetTransform(matrix);
 }
 
-void SetTransform(HANDLE ctx, FLOAT angle, D2D_POINT_2F center)
+static void SetTransform(void* ctx, float angle, D2D_POINT_2F center)
 {
 	RetrieveContext(ctx);
 
@@ -368,35 +388,31 @@ void SetTransform(HANDLE ctx, FLOAT angle, D2D_POINT_2F center)
 	context->renderTarget->SetTransform(mr * mt);
 }
 
-void ResetTransform(HANDLE ctx)
+static void ResetTransform(void* ctx)
 {
 	RetrieveContext(ctx);
 	context->renderTarget->SetTransform(D2D1::Matrix3x2F::Identity());
 }
 
-void ReleaseObject(HANDLE handle)
-{
-	ID2D1Resource* object = reinterpret_cast<ID2D1Resource*>(handle);
-	SafeRelease(&object);
-}
 
-HRESULT GetLastErrorCode(HANDLE handle)
+
+static HRESULT GetLastErrorCode(void* handle)
 {
 	D2DContext* context = reinterpret_cast<D2DContext*>(handle);
 	return context->lastErrorCode;
 }
 
-HANDLE CreateLayer(HANDLE ctx)
+static void* CreateLayer(void* ctx)
 {
 	RetrieveContext(ctx);
 
 	ID2D1Layer* layer;
 	context->renderTarget->CreateLayer(&layer);
 
-	return (HANDLE)layer;
+	return (void*)layer;
 }
 
-void PushLayer(HANDLE ctx, HANDLE layerHandle, D2D1_RECT_F& contentBounds, ID2D1Brush* opacityBrush,
+static void PushLayer(void* ctx, void* layerHandle, D2D1_RECT_F& contentBounds, ID2D1Brush* opacityBrush,
 							 D2D1_LAYER_OPTIONS layerOptions)
 {
 	RetrieveContext(ctx);
