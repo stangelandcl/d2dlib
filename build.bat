@@ -8,13 +8,14 @@ set ROOT=%~dp0
 set PLAT=x64
 set CONF=Debug
 call :build
-exit /b 0
 set CONF=Release
 call :build
 set PLAT=x86
 call :build
 set CONF=Debug
 call :build
+
+exit /b 0
 
 :build
 setlocal

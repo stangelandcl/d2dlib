@@ -1,12 +1,51 @@
 namespace Direct2D {
 
+public enum class WindowsMessages : uint32_t {
+        WM_NULL=0,
+        WM_CREATE,
+        WM_DESTROY,
+        WM_MOVE,
+        WM_SIZE=5,
+        WM_ACTIVATE,
+        WM_SETFOCUS,
+        WM_KILLFOCUS,
+        WM_ENABLE=0xA,
+        WM_SETTEXT=0xC,
+        WM_GETTEXT,
+        WM_GETTEXTLENGTH,
+        WM_PAINT,
+        WM_CLOSE,
+        WM_QUERYENDSESSION,
+        WM_QUERYOPEN=0x13,
+        WM_ERASEBKGND,
+        WM_ENDSESSION=0x16,
+        WM_SHOWWINDOW=0x18,
+        WM_COPYDATA=0x4A,
+        WM_HSCROLL=0x114,
+        WM_VSCROLL=0x115,
+        WM_CONTEXTMENU=0x7B,
+        WM_KEYDOWN=0x100,
+        WM_KEYUP,
+        WM_MOUSEMOVE=0x200,
+        WM_CHAR=0x102,
+        WM_LBUTTONDOWN=0x201,
+        WM_LBUTTONUP,
+        WM_LBUTTONDBLCLK,
+        WM_RBUTTONDOWN,
+        WM_RBUTTONUP,
+        WM_RBUTTONDBLCLK,
+        WM_MOUSEWHEEL=0x20E,
+        WM_HOTKEY=0x312,
+        WM_DRAWCLIPBOARD=0x308,
+        WM_CHANGECBCHAIN=0x30D,
+        WM_USER=0x400,
+};
 
 public ref struct D2DForm : System::Windows::Forms::Form
 {
         D2DForm() : System::Windows::Forms::Form()
         {
-                timer = gcnew System::Windows::Forms::Timer();
-                timer->Interval = 10;
+                timer = Timer { Interval = 10 };
         }
 
         property D2DDevice^ Device
@@ -15,20 +54,20 @@ public ref struct D2DForm : System::Windows::Forms::Form
                 {
                         auto hwnd = Handle;
                         if (!device)
-                                device = D2DDevice::FromHwnd(hwnd.ToPointer());
+                                device = D2DDevice::FromHwnd(hwnd);
                         return device;
 		}
         }
 
-        property D2DBitmap^ BackgroundImage
+        property new D2DBitmap^ BackgroundImage
         {
-                virtual D2DBitmap^ get() new { return backgroundImage; }
-                virtual void set(D2DBitmap^ value)
+                D2DBitmap^ get() { return backgroundImage; }
+                void set(D2DBitmap^ value)
                 {
                         if (backgroundImage != value)
                         {
                                 if (backgroundImage)
-                                        backgroundImage->~D2DBitmap();
+                                        backgroundImage->Dispose();
                                 backgroundImage = value;
                                 Invalidate();
                         }
@@ -50,7 +89,7 @@ public ref struct D2DForm : System::Windows::Forms::Form
                 }
         }
 
-        virtual void Invalidate() new
+        new void Invalidate()
         {
                 System::Windows::Forms::Form::Invalidate(false);
         }
@@ -58,7 +97,7 @@ public ref struct D2DForm : System::Windows::Forms::Form
 protected:
         property bool SceneAnimation
         {
-                bool get() { return sceneAnimation; }
+                bool get { return sceneAnimation; }
                 void set(bool value)
                 {
                         sceneAnimation = true;
@@ -75,26 +114,24 @@ protected:
                 DoubleBuffered = false;
 
                 if (!device)
-                        device = D2DDevice::FromHwnd(Handle.ToPointer());
+                        device = D2DDevice::FromHwnd(Handle);
 
                 graphics = gcnew D2DGraphics(device);
-                timer->Tick += gcnew EventHandler(this, &D2DForm::OnTick);
-        }
-
-        void OnTick(Object^ sender, EventArgs^ args)
-        {
-                if (!SceneAnimation || SceneChanged)
-                {
-                        OnFrame();
-                        Invalidate();
-                        SceneChanged = false;
-                }
+                timer->Tick += (ss, ee) =>
+                    {
+                            if (!SceneAnimation || SceneChanged)
+                            {
+                                    OnFrame();
+                                    Invalidate();
+                                    SceneChanged = false;
+                            }
+                    };
         }
 
         virtual void OnPaintBackground(System::Windows::Forms::PaintEventArgs^ e) override
         { }
 
-        virtual void OnPaint(System::Windows::Forms::PaintEventArgs^ e) override
+        virtual override void OnPaint(System::Windows::Forms::PaintEventArgs^ e) override
         {
                 if (DesignMode)
                 {
@@ -121,7 +158,7 @@ protected:
                                 {
                                         lastFps = currentFps;
                                         currentFps = 0;
-                                        lastFpsUpdate = DateTime::Now;
+                                        lastFpsUpdate = DateTime.Now;
                                 }
                                 else
                                 {
@@ -145,25 +182,25 @@ protected:
 
         virtual void WndProc(System::Windows::Forms::Message% m) override
         {
-                switch (m.Msg)
+                switch (m->Msg)
                 {
-                case (int)WindowsMessages::WMERASEBKGND:
+                case (int)WindowsMessages::WM_ERASEBKGND:
                         break;
 
-                case (int)WindowsMessages::WMSIZE:
+                case (int)WindowsMessages::WM_SIZE:
                         System::Windows::Forms::Form::WndProc(m);
-                        if (device)
+                        if (this.device != null)
                         {
                                 device->Resize();
                                 Invalidate(false);
                         }
                         break;
 
-                case (int)WindowsMessages::WMDESTROY:
+                case (int)WindowsMessages::WM_DESTROY:
                         if (backgroundImage)
-                                backgroundImage->~D2DBitmap();
+                                backgroundImage->Dispose();
                         if (device)
-                                device->~D2DDevice();
+                                device->Dispose();
                         System::Windows::Forms::Form::WndProc(m);
                         break;
 
@@ -177,13 +214,13 @@ protected:
 
         virtual void OnFrame() { }
 
-	virtual void OnKeyDown(System::Windows::Forms::KeyEventArgs^ e) override
+	virtual void OnKeyDown(KeyEventArgs^ e) override
         {
                 System::Windows::Forms::Form::OnKeyDown(e);
 
                 switch (e->KeyCode)
                 {
-                case System::Windows::Forms::Keys::Escape:
+                case Keys::Escape:
                         if (EscapeKeyToClose)
                                 Close();
                         break;
@@ -195,8 +232,8 @@ private:
         D2DGraphics^ graphics;
         int currentFps;
         int lastFps;
-        DateTime lastFpsUpdate = DateTime::Now;
-        System::Windows::Forms::Timer^ timer;
+        DateTime lastFpsUpdate = DateTime.Now;
+        Timer timer;
         bool animationDraw;
         bool sceneAnimation;
 
@@ -212,28 +249,28 @@ public ref struct D2DControl : System::Windows::Forms::Control
                 {
                         auto hwnd = Handle;
                         if (!device)
-                                device = D2DDevice::FromHwnd(hwnd.ToPointer());
+                                device = D2DDevice::FromHwnd(hwnd);
                         return device;
                 }
         }
 
         property bool ShowFPS;
 
-        virtual void Invalidate() new
+        new void Invalidate()
         {
                 System::Windows::Forms::Control::Invalidate(false);
         }
 
 
-        property D2DBitmap^ BackgroundImage
+        property new D2DBitmap^ BackgroundImage
 	{
-                virtual D2DBitmap^ get() new { return backgroundImage; }
-                virtual void set(D2DBitmap^ value)
+                D2DBitmap^ get() { return backgroundImage; }
+                void set(D2DBitmap^ value)
                 {
                         if (backgroundImage != value)
                         {
                                 if (backgroundImage)
-                                        backgroundImage->~D2DBitmap();
+                                        backgroundImage->Dispose();
                                 backgroundImage = value;
                                 Invalidate();
 
@@ -243,12 +280,12 @@ public ref struct D2DControl : System::Windows::Forms::Control
 
         virtual void CreateHandle() override
         {
-                System::Windows::Forms::Control::CreateHandle();
+                System::Windows::Forms::ControlCreateHandle();
 
                 DoubleBuffered = false;
 
                 if (!device)
-                        device = D2DDevice::FromHwnd(Handle.ToPointer());
+                        device = D2DDevice::FromHwnd(Handle);
 
                 graphics = gcnew D2DGraphics(device);
         }
@@ -268,7 +305,7 @@ protected:
 
                 if (ShowFPS)
                 {
-                        if (lastFpsUpdate.Second != DateTime::Now.Second)
+                        if (lastFpsUpdate.Second != DateTime.Now.Second)
                         {
                                 lastFps = currentFps;
                                 currentFps = 0;
@@ -289,19 +326,19 @@ protected:
         virtual void DestroyHandle() override
         {
                 System::Windows::Forms::Control::DestroyHandle();
-                device->~D2DDevice();
+                device->Dispose();
         }
 
-        virtual void OnRender(D2DGraphics^ g) { }
+		virtual void OnRender(D2DGraphics g) override { }
 
         virtual void WndProc(System::Windows::Forms::Message% m) override
         {
-                switch (m.Msg)
+                switch (m->Msg)
                 {
-                case (int)WindowsMessages::WMERASEBKGND:
+                case (int)WindowsMessages::WM_ERASEBKGND:
                         break;
 
-                case (int)WindowsMessages::WMSIZE:
+                case (int)WindowsMessages::WM_SIZE:
                         System::Windows::Forms::Control::WndProc(m);
                         if (device)
                                 device->Resize();
@@ -315,12 +352,12 @@ protected:
 
 private:
         D2DDevice^ device;
-        DateTime lastFpsUpdate = DateTime::Now;
+        DateTime lastFpsUpdate = DateTime.Now;
         D2DGraphics^ graphics;
         int currentFps;
         int lastFps;
         D2DBitmap^ backgroundImage;
 
-};
+}
 
 }

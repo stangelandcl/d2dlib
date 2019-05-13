@@ -32,7 +32,7 @@ static void* CreatePathGeometry(void* ctx)
 	return (void*)pathContext;
 }
 
-static void DestoryPathGeometry(void* ctx)
+static void DestroyPathGeometry(void* ctx)
 {
 	D2DPathContext* pathContext = reinterpret_cast<D2DPathContext*>(ctx);
 	SafeRelease(&pathContext->path);

@@ -18,15 +18,22 @@ static cli::array<uint8_t>^ ToUtf16(String^ s)
 
 public ref struct D2DObject : IDisposable
 {
-    D2DObject(void* handle)
-    {
-        this->Handle = handle;
-    }
+        D2DObject(void* handle)
+        {
+                this->Handle = handle;
+        }
 
-    ~D2DObject()
-    {
-        if (Handle) ReleaseObject(Handle);
-    }
+        ~D2DObject()
+        {
+                if (Handle)
+                        ReleaseObject(Handle);
+                GC::SuppressFinalize(this);
+        }
+        !D2DObject()
+        {
+                if(Handle)
+                        ReleaseObject(Handle);
+        }
 
 internal:
         void* Handle;
@@ -187,7 +194,7 @@ public:
 
         virtual ~D2DPathGeometry() override
         {
-                DestoryPathGeometry(Handle);
+                DestroyPathGeometry(Handle);
         }
 };
 
@@ -337,6 +344,12 @@ public:
         }
 
 	~D2DDevice()
+        {
+                DestroyContext(Handle);
+                GC::SuppressFinalize(this);
+        }
+
+        !D2DDevice()
         {
                 DestroyContext(Handle);
         }
@@ -788,6 +801,19 @@ public:
                     (::DWRITE_PARAGRAPH_ALIGNMENT)valign);
         }
 
+        void DrawText(String^ text, D2DColor color, String^ fontName, float fontSize, D2DRect rect)
+        {
+                DrawText(text, color, fontName, fontSize, rect,
+                    DWRITE_TEXT_ALIGNMENT::DWRITE_TEXT_ALIGNMENT_CENTER,
+                    DWRITE_PARAGRAPH_ALIGNMENT::DWRITE_PARAGRAPH_ALIGNMENT_CENTER);
+        }
+
+        void DrawText(String^ text, D2DColor color, System::Drawing::Font^ font, System::Drawing::PointF location)
+        {
+                auto rect = D2DRect(location.X, location.Y, 9999999, 9999999);
+                DrawText(text, color, font->Name, font->Size * 96.f / 72.f, rect);
+        }
+
         void DrawPath(D2DPathGeometry^ path, D2DColor strokeColor,
             float strokeWidth, D2DDashStyle dashStyle)
         {
@@ -825,7 +851,14 @@ public:
          ~D2DBitmapGraphics()
          {
                  DestoryBitmapRenderTarget(DeviceHandle);
+                 GC::SuppressFinalize(this);
          }
+
+        !D2DBitmapGraphics()
+        {
+                DestoryBitmapRenderTarget(DeviceHandle);
+        }
+
 };
 
 
